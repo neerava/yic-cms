@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YIC CMS — AI Content Studio</title>
+  <style>
+    /* ─── Spectrum 2 design tokens ───────────────────────────────────────────── */
+    :root {
+      --sp-font: 'Adobe Clean', ui-sans-serif, system-ui, -apple-system,
+                 BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+      /* Gray scale — light theme */
+      --sp-gray-25:  #fafafa;
+      --sp-gray-50:  #f8f8f8;
+      --sp-gray-75:  #f3f3f3;
+      --sp-gray-100: #e9e9e9;
+      --sp-gray-200: #d9d9d9;
+      --sp-gray-300: #c7c7c7;
+      --sp-gray-400: #b3b3b3;
+      --sp-gray-500: #8f8f8f;
+      --sp-gray-600: #686868;
+      --sp-gray-700: #464646;
+      --sp-gray-800: #292929;
+      --sp-gray-900: #131313;
+
+      /* Blue / accent */
+      --sp-blue-50:  #f5f8ff;
+      --sp-blue-100: #eef1ff;
+      --sp-blue-200: #d8dfff;
+      --sp-blue-300: #b3c2fd;
+      --sp-blue-600: #3b63fb;   /* S2 accent */
+      --sp-blue-700: #2952e8;
+      --sp-blue-800: #1e44d4;
+
+      /* Positive */
+      --sp-green-600: #188038;
+      --sp-green-bg:  #f0faf4;
+      --sp-green-border: #a8d5b5;
+
+      /* Adobe brand */
+      --sp-adobe-red: #fa0f00;
+
+      /* Semantic roles */
+      --sp-bg:             var(--sp-gray-25);
+      --sp-surface:        #ffffff;
+      --sp-border:         var(--sp-gray-100);
+      --sp-border-mid:     var(--sp-gray-200);
+      --sp-border-strong:  var(--sp-gray-300);
+      --sp-text:           var(--sp-gray-900);
+      --sp-text-sub:       var(--sp-gray-700);
+      --sp-text-muted:     var(--sp-gray-500);
+
+      --sp-accent:         var(--sp-blue-600);
+      --sp-accent-hover:   var(--sp-blue-700);
+      --sp-accent-press:   var(--sp-blue-800);
+      --sp-accent-light:   var(--sp-blue-100);
+      --sp-accent-border:  var(--sp-blue-300);
+
+      /* Spacing — 8px base */
+      --sp-s1: 4px;
+      --sp-s2: 8px;
+      --sp-s3: 12px;
+      --sp-s4: 16px;
+      --sp-s5: 20px;
+      --sp-s6: 24px;
+      --sp-s8: 32px;
+      --sp-s10: 40px;
+
+      /* Border radius */
+      --sp-r1: 3px;
+      --sp-r2: 4px;
+      --sp-r3: 6px;
+      --sp-r4: 8px;
+      --sp-rpill: 9999px;
+
+      /* Shadows */
+      --sp-shadow-xs: 0 1px 2px rgba(0,0,0,0.06);
+      --sp-shadow-sm: 0 1px 4px rgba(0,0,0,0.08);
+      --sp-shadow-md: 0 4px 12px rgba(0,0,0,0.10);
+    }
+
+    /* ─── Reset ──────────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--sp-font);
+      font-size: 16px;
+      line-height: 1.5;
+      color: var(--sp-text);
+      background: var(--sp-bg);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─── App header ─────────────────────────────────────────────────────────── */
+    .sp-header {
+      height: 48px;
+      background: var(--sp-surface);
+      border-bottom: 1px solid var(--sp-border);
+      display: flex;
+      align-items: center;
+      padding: 0 var(--sp-s6);
+      gap: var(--sp-s4);
+      flex-shrink: 0;
+      box-shadow: var(--sp-shadow-xs);
+    }
+
+    .sp-header-brand {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-s2);
+      text-decoration: none;
+    }
+
+    /* Adobe "A" logo */
+    .sp-adobe-logo {
+      width: 24px;
+      height: 24px;
+      background: var(--sp-adobe-red);
+      border-radius: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .sp-product-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--sp-text);
+      letter-spacing: -0.1px;
+      line-height: 1;
+    }
+
+    .sp-product-name span {
+      font-weight: 400;
+      color: var(--sp-text-sub);
+    }
+
+    .sp-header-divider {
+      width: 1px;
+      height: 22px;
+      background: var(--sp-border-mid);
+      flex-shrink: 0;
+    }
+
+    .sp-breadcrumb {
+      font-size: 13px;
+      color: var(--sp-text-sub);
+      font-weight: 400;
+    }
+
+    .sp-header-end {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: var(--sp-s4);
+    }
+
+    /* Status pill */
+    .sp-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--sp-s1) + 2px;
+      gap: 5px;
+      border: 1px solid var(--sp-green-border);
+      background: var(--sp-green-bg);
+      border-radius: var(--sp-rpill);
+      padding: 3px 10px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--sp-green-600);
+    }
+
+    .sp-status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--sp-green-600);
+      animation: sp-pulse 2.4s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes sp-pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.35; }
+    }
+
+    .sp-tagline {
+      font-size: 12px;
+      color: var(--sp-text-muted);
+      font-weight: 400;
+    }
+
+    /* ─── Chat area ──────────────────────────────────────────────────────────── */
+    .sp-chat {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--sp-s8) var(--sp-s6) var(--sp-s8);
+      display: flex;
+      flex-direction: column;
+      align-items: center;       /* center the column */
+      gap: var(--sp-s5);
+      scroll-behavior: smooth;
+    }
+
+    /* All direct children fill the centered column */
+    .sp-chat > * {
+      width: 100%;
+      max-width: 860px;
+    }
+
+    .sp-chat::-webkit-scrollbar { width: 6px; }
+    .sp-chat::-webkit-scrollbar-track { background: transparent; }
+    .sp-chat::-webkit-scrollbar-thumb {
+      background: var(--sp-gray-300);
+      border-radius: 3px;
+    }
+
+    /* ─── Welcome ────────────────────────────────────────────────────────────── */
+    .sp-welcome {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: var(--sp-s10) var(--sp-s6) var(--sp-s8);
+      max-width: 560px;
+      margin: 0 auto;
+    }
+
+    .sp-welcome-icon {
+      width: 68px;
+      height: 68px;
+      background: var(--sp-accent-light);
+      border-radius: var(--sp-r4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: var(--sp-s5);
+      border: 1px solid var(--sp-accent-border);
+    }
+
+    .sp-welcome-icon svg {
+      width: 34px;
+      height: 34px;
+    }
+
+    .sp-welcome h2 {
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--sp-text);
+      line-height: 1.3;
+      margin-bottom: var(--sp-s2);
+      letter-spacing: -0.2px;
+    }
+
+    .sp-welcome p {
+      font-size: 16px;
+      color: var(--sp-text-sub);
+      line-height: 1.6;
+      max-width: 480px;
+    }
+
+    .sp-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--sp-s2);
+      justify-content: center;
+      margin-top: var(--sp-s5);
+    }
+
+    .sp-chip {
+      background: var(--sp-surface);
+      border: 1px solid var(--sp-border-mid);
+      border-radius: var(--sp-rpill);
+      padding: 8px 18px;
+      font-size: 15px;
+      font-weight: 400;
+      color: var(--sp-text-sub);
+      cursor: pointer;
+      font-family: var(--sp-font);
+      transition: background 0.13s, border-color 0.13s, color 0.13s;
+      line-height: 1.4;
+    }
+
+    .sp-chip:hover {
+      background: var(--sp-gray-75);
+      border-color: var(--sp-border-strong);
+      color: var(--sp-text);
+    }
+
+    .sp-chip:focus-visible {
+      outline: 2px solid var(--sp-accent);
+      outline-offset: 2px;
+    }
+
+    /* ─── Messages ───────────────────────────────────────────────────────────── */
+    .sp-message {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--sp-s3);
+      width: 100%;
+    }
+
+    .sp-message.sp-user {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+
+    /* Avatar */
+    .sp-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1;
+      margin-top: 2px;
+    }
+
+    .sp-avatar-agent {
+      background: var(--sp-accent);
+      color: #fff;
+    }
+
+    .sp-avatar-user {
+      background: var(--sp-gray-100);
+      color: var(--sp-gray-600);
+    }
+
+    /* Bubble */
+    .sp-bubble {
+      background: var(--sp-surface);
+      border: 1px solid var(--sp-border-mid);
+      border-radius: var(--sp-r2) var(--sp-r4) var(--sp-r4) var(--sp-r4);
+      padding: var(--sp-s4) var(--sp-s5);
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--sp-text);
+      max-width: 600px;
+      box-shadow: var(--sp-shadow-xs);
+    }
+
+    .sp-message.sp-user .sp-bubble {
+      background: var(--sp-accent-light);
+      border-color: var(--sp-accent-border);
+      color: var(--sp-blue-800);
+      border-radius: var(--sp-r4) var(--sp-r2) var(--sp-r4) var(--sp-r4);
+    }
+
+    /* Typing indicator */
+    .sp-typing {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      height: 20px;
+      padding: 0 2px;
+    }
+
+    .sp-typing span {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--sp-gray-400);
+      animation: sp-bounce 1.2s ease-in-out infinite;
+    }
+
+    .sp-typing span:nth-child(2) { animation-delay: 0.18s; }
+    .sp-typing span:nth-child(3) { animation-delay: 0.36s; }
+
+    @keyframes sp-bounce {
+      0%, 80%, 100% { transform: translateY(0);    opacity: 0.4; }
+      40%           { transform: translateY(-5px); opacity: 1; }
+    }
+
+    /* Follow-up suggestion */
+    .sp-follow-up {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: var(--sp-s3);
+      padding: 7px 14px;
+      background: var(--sp-blue-50);
+      border: 1px solid var(--sp-accent-border);
+      border-radius: var(--sp-rpill);
+      font-size: 14px;
+      color: var(--sp-accent);
+      cursor: pointer;
+      font-family: var(--sp-font);
+      font-weight: 500;
+      transition: background 0.13s, border-color 0.13s;
+      text-align: left;
+    }
+
+    .sp-follow-up:hover {
+      background: var(--sp-blue-100);
+      border-color: var(--sp-blue-600);
+    }
+
+    .sp-follow-up::before {
+      content: '↩';
+      font-size: 13px;
+      opacity: 0.6;
+      flex-shrink: 0;
+    }
+
+    /* Preview CTA button — Spectrum 2 "accent" variant */
+    .sp-preview-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--sp-s2);
+      margin-top: var(--sp-s3);
+      background: var(--sp-accent);
+      color: #ffffff;
+      text-decoration: none;
+      border-radius: var(--sp-r2);
+      padding: 0 var(--sp-s4);
+      height: 32px;
+      font-size: 14px;
+      font-weight: 700;
+      font-family: var(--sp-font);
+      transition: background 0.13s;
+      cursor: pointer;
+    }
+
+    .sp-preview-btn:hover  { background: var(--sp-accent-hover); }
+    .sp-preview-btn:active { background: var(--sp-accent-press); }
+
+    .sp-preview-btn:focus-visible {
+      outline: 2px solid var(--sp-accent);
+      outline-offset: 2px;
+    }
+
+    .sp-preview-btn svg {
+      width: 14px;
+      height: 14px;
+      fill: currentColor;
+      flex-shrink: 0;
+    }
+
+    /* ─── Input bar ──────────────────────────────────────────────────────────── */
+    .sp-input-bar {
+      background: var(--sp-surface);
+      border-top: 1px solid var(--sp-border);
+      padding: var(--sp-s4) var(--sp-s6);
+      display: flex;
+      flex-direction: column;
+      align-items: center;       /* center the inner column */
+      gap: var(--sp-s2);
+      flex-shrink: 0;
+    }
+
+    /* Constrain input to the same width as the chat column */
+    .sp-input-inner {
+      width: 100%;
+      max-width: 860px;
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-s2);
+    }
+
+    .sp-input-row {
+      display: flex;
+      align-items: flex-end;
+      gap: var(--sp-s3);
+    }
+
+    .sp-textfield-wrap {
+      flex: 1;
+      position: relative;
+    }
+
+    /* Spectrum 2 textfield */
+    .sp-textarea {
+      width: 100%;
+      background: var(--sp-surface);
+      border: 1px solid var(--sp-border-strong);
+      border-radius: var(--sp-r2);
+      padding: var(--sp-s3) var(--sp-s4);
+      font-size: 16px;
+      font-family: var(--sp-font);
+      line-height: 1.5;
+      color: var(--sp-text);
+      resize: none;
+      outline: none;
+      min-height: 48px;
+      max-height: 160px;
+      transition: border-color 0.13s, box-shadow 0.13s;
+      display: block;
+    }
+
+    .sp-textarea::placeholder { color: var(--sp-text-muted); }
+
+    .sp-textarea:hover:not(:focus) {
+      border-color: var(--sp-gray-500);
+    }
+
+    .sp-textarea:focus {
+      border-color: var(--sp-accent);
+      box-shadow: 0 0 0 2px rgba(59, 99, 251, 0.22);
+    }
+
+    /* Spectrum 2 CTA button */
+    .sp-send-btn {
+      height: 48px;
+      width: 48px;
+      background: var(--sp-accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--sp-r2);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.13s;
+      flex-shrink: 0;
+    }
+
+    .sp-send-btn:hover  { background: var(--sp-accent-hover); }
+    .sp-send-btn:active { background: var(--sp-accent-press); }
+    .sp-send-btn:disabled {
+      background: var(--sp-gray-200);
+      cursor: not-allowed;
+    }
+
+    .sp-send-btn svg {
+      width: 16px;
+      height: 16px;
+      fill: #fff;
+    }
+
+    .sp-send-btn:focus-visible {
+      outline: 2px solid var(--sp-accent);
+      outline-offset: 2px;
+    }
+
+    .sp-disclaimer {
+      font-size: 11px;
+      color: var(--sp-text-muted);
+      text-align: center;
+      letter-spacing: 0.01em;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ─── App header ──────────────────────────────────────────────────────────── -->
+<header class="sp-header">
+  <a class="sp-header-brand" href="#">
+    <!-- Adobe "A" mark -->
+    <div class="sp-adobe-logo" aria-hidden="true">
+      <svg width="16" height="16" viewBox="0 0 100 100" fill="none">
+        <path d="M58 10L96 90H72L62 66H38l14-18h14L55 24z" fill="#fff"/>
+        <path d="M42 10L4 90h24l9-24h18L42 10z" fill="#fff"/>
+      </svg>
+    </div>
+    <span class="sp-product-name">YIC &nbsp;<span>Content Studio</span></span>
+  </a>
+
+  <div class="sp-header-divider" aria-hidden="true"></div>
+  <span class="sp-breadcrumb">AI Assistant</span>
+
+  <div class="sp-header-end">
+    <div class="sp-status-badge">
+      <div class="sp-status-dot"></div>
+      AI Agent Online
+    </div>
+    <span class="sp-tagline">Omnichannel · Headless · AI-Native</span>
+  </div>
+</header>
+
+<!-- ─── Chat area ───────────────────────────────────────────────────────────── -->
+<main class="sp-chat" id="chatArea" role="log" aria-live="polite" aria-label="Conversation">
+
+  <div class="sp-welcome" id="welcomeBlock">
+    <div class="sp-welcome-icon" aria-hidden="true">
+      <!-- Sparkle / AI icon -->
+      <svg viewBox="0 0 28 28" fill="none">
+        <path d="M14 4v4M14 20v4M4 14H8M20 14h4" stroke="#3b63fb" stroke-width="2" stroke-linecap="round"/>
+        <path d="M7.05 7.05l2.83 2.83M18.12 18.12l2.83 2.83M7.05 20.95l2.83-2.83M18.12 9.88l2.83-2.83" stroke="#3b63fb" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="14" cy="14" r="4" fill="#3b63fb" fill-opacity="0.15" stroke="#3b63fb" stroke-width="1.5"/>
+      </svg>
+    </div>
+    <h2>Welcome to YIC Content Studio</h2>
+    <p>Your intelligent CMS co-pilot. Describe what you want to build and the AI will orchestrate your entire content lifecycle — from authoring to omnichannel delivery.</p>
+    <div class="sp-chips" role="list">
+      <button class="sp-chip" role="listitem" onclick="fillPrompt(this)">Build a product launch campaign</button>
+      <button class="sp-chip" role="listitem" onclick="fillPrompt(this)">Generate a personalized landing page</button>
+      <button class="sp-chip" role="listitem" onclick="fillPrompt(this)">Migrate legacy content to headless</button>
+      <button class="sp-chip" role="listitem" onclick="fillPrompt(this)">Set up A/B testing for homepage hero</button>
+    </div>
+  </div>
+
+</main>
+
+<!-- ─── Input bar ────────────────────────────────────────────────────────────── -->
+<footer class="sp-input-bar">
+  <div class="sp-input-inner">
+    <div class="sp-input-row">
+      <div class="sp-textfield-wrap">
+        <textarea
+          id="userInput"
+          class="sp-textarea"
+          placeholder="Ask YIC to build, optimize, or publish anything…"
+          rows="1"
+          onkeydown="handleKey(event)"
+          oninput="autoResize(this)"
+          aria-label="Message"
+        ></textarea>
+      </div>
+      <button class="sp-send-btn" id="sendBtn" onclick="sendMessage()" aria-label="Send message">
+        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      </button>
+    </div>
+    <p class="sp-disclaimer">YIC CMS &nbsp;·&nbsp; AI responses may vary &nbsp;·&nbsp; Enterprise Edition</p>
+  </div>
+</footer>
+
+<script>
+  let turnCount = 0;
+  let waiting = false;
+
+  function fillPrompt(btn) {
+    const input = document.getElementById('userInput');
+    input.value = btn.textContent.trim();
+    autoResize(input);
+    input.focus();
+  }
+
+  function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+  }
+
+  function handleKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  }
+
+  function addMessage(role, html) {
+    const wrap = document.getElementById('chatArea');
+    const welcome = document.getElementById('welcomeBlock');
+    if (welcome) welcome.remove();
+
+    const isAgent = role === 'agent';
+    const div = document.createElement('div');
+    div.className = `sp-message ${isAgent ? '' : 'sp-user'}`;
+
+    const avatar = document.createElement('div');
+    avatar.className = `sp-avatar ${isAgent ? 'sp-avatar-agent' : 'sp-avatar-user'}`;
+    avatar.setAttribute('aria-hidden', 'true');
+    if (isAgent) {
+      avatar.innerHTML = `<svg width="14" height="14" viewBox="0 0 28 28" fill="none">
+        <path d="M14 4v4M14 20v4M4 14H8M20 14h4" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
+        <circle cx="14" cy="14" r="4" fill="#fff" fill-opacity="0.3"/>
+        <circle cx="14" cy="14" r="1.5" fill="#fff"/>
+      </svg>`;
+    } else {
+      avatar.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="8" r="4" fill="#8f8f8f"/>
+        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="#8f8f8f" stroke-width="2" stroke-linecap="round"/>
+      </svg>`;
+    }
+
+    const bubble = document.createElement('div');
+    bubble.className = 'sp-bubble';
+    bubble.innerHTML = html;
+
+    div.appendChild(avatar);
+    div.appendChild(bubble);
+    wrap.appendChild(div);
+    wrap.scrollTop = wrap.scrollHeight;
+    return bubble;
+  }
+
+  function showTyping() {
+    const wrap = document.getElementById('chatArea');
+    const div = document.createElement('div');
+    div.className = 'sp-message';
+    div.id = 'spTypingMsg';
+
+    const avatar = document.createElement('div');
+    avatar.className = 'sp-avatar sp-avatar-agent';
+    avatar.setAttribute('aria-hidden', 'true');
+    avatar.innerHTML = `<svg width="14" height="14" viewBox="0 0 28 28" fill="none">
+      <path d="M14 4v4M14 20v4M4 14H8M20 14h4" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
+      <circle cx="14" cy="14" r="4" fill="#fff" fill-opacity="0.3"/>
+      <circle cx="14" cy="14" r="1.5" fill="#fff"/>
+    </svg>`;
+
+    const bubble = document.createElement('div');
+    bubble.className = 'sp-bubble';
+    bubble.setAttribute('aria-label', 'Agent is typing');
+    bubble.innerHTML = `<div class="sp-typing"><span></span><span></span><span></span></div>`;
+
+    div.appendChild(avatar);
+    div.appendChild(bubble);
+    wrap.appendChild(div);
+    wrap.scrollTop = wrap.scrollHeight;
+  }
+
+  function removeTyping() {
+    const el = document.getElementById('spTypingMsg');
+    if (el) el.remove();
+  }
+
+  async function sendMessage() {
+    if (waiting) return;
+    const input = document.getElementById('userInput');
+    const msg = input.value.trim();
+    if (!msg) return;
+
+    input.value = '';
+    autoResize(input);
+    document.getElementById('sendBtn').disabled = true;
+    waiting = true;
+
+    addMessage('user', escapeHtml(msg));
+    showTyping();
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: msg, turn: turnCount }),
+      });
+
+      const data = await res.json();
+      removeTyping();
+
+      let html = escapeHtml(data.text);
+      if (data.done && data.previewUrl) {
+        html += `<br><a class="sp-preview-btn" href="${data.previewUrl}" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24"><path d="M12 5C6.48 5 2 12 2 12s4.48 7 10 7 10-7 10-7S17.52 5 12 5zm0 12a5 5 0 110-10 5 5 0 010 10zm0-8a3 3 0 100 6 3 3 0 000-6z"/></svg>
+          Preview your content
+        </a>`;
+      }
+      if (data.followUp) {
+        html += `<br><button class="sp-follow-up" onclick="fillPrompt(this)">${escapeHtml(data.followUp)}</button>`;
+      }
+
+      addMessage('agent', html);
+      turnCount++;
+    } catch {
+      removeTyping();
+      addMessage('agent', 'The content pipeline encountered an unexpected error. Please try again.');
+    }
+
+    document.getElementById('sendBtn').disabled = false;
+    waiting = false;
+  }
+
+  function escapeHtml(str) {
+    return str
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+</script>
+</body>
+</html>

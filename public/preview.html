@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YIC CMS — Content Preview</title>
+  <style>
+    :root {
+      --sp-font: 'Adobe Clean', ui-sans-serif, system-ui, -apple-system,
+                 BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --sp-adobe-red: #fa0f00;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--sp-font);
+      background: radial-gradient(ellipse at center, #0a2a4a 0%, #040e1a 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    canvas { display: block; cursor: crosshair; }
+
+    /* ── Score panel ─────────────────────────────────────────────────────────── */
+    .oak-lucene-index {
+      position: fixed;
+      top: 64px;
+      right: 24px;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      background: rgba(4, 14, 26, 0.65);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    .oak-index-rules {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.4);
+      text-align: center;
+      padding: 10px 24px 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .oak-aggregate {
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      color: #FFD700;
+      text-shadow: 0 0 10px rgba(255,215,0,0.7);
+      opacity: 0;
+      transform: scale(0.8);
+      transition: opacity 0.15s, transform 0.15s;
+    }
+
+    .oak-aggregate.jcr-checked-in {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .oak-aggregate.nt-frozen-node {
+      animation: nt-frozen-node 0.3s ease;
+    }
+
+    .jcr-content-root {
+      display: flex;
+      align-items: center;
+      padding: 10px 0;
+    }
+
+    .jcr-property-def {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 0 26px;
+    }
+
+    .nt-property-definition {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.28);
+    }
+
+    .jcr-value {
+      font-size: 30px;
+      font-weight: 800;
+      color: rgba(255,255,255,0.9);
+      letter-spacing: -0.03em;
+      min-width: 56px;
+      text-align: center;
+      line-height: 1;
+    }
+
+    .mix-versionable {
+      color: #FFD700;
+      text-shadow: 0 0 16px rgba(255, 215, 0, 0.45);
+    }
+
+    .mix-versionable.nt-frozen-node {
+      animation: nt-frozen-node 0.45s ease;
+    }
+
+    @keyframes nt-frozen-node {
+      0%   { transform: scale(1); }
+      40%  { transform: scale(1.35); color: #fff; text-shadow: 0 0 24px rgba(255,255,255,0.9); }
+      100% { transform: scale(1); }
+    }
+
+    .jcr-last-modified {
+      font-size: 22px;
+      color: rgba(255,255,255,0.45);
+    }
+
+    .jcr-last-modified.jcr-lock-owner { color: #ff6b6b; }
+
+    .rep-restriction {
+      width: 1px;
+      height: 36px;
+      background: rgba(255,255,255,0.09);
+      flex-shrink: 0;
+    }
+
+    /* ── Spectrum 2 shell header — dark-adapted ─────────────────────────────── */
+    .nt-hierarchy-node {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 48px;
+      background: rgba(4, 14, 26, 0.72);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 14px;
+      z-index: 20;
+    }
+
+    .jcr-namespace-prefix {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+
+    .nt-base {
+      width: 24px;
+      height: 24px;
+      background: var(--sp-adobe-red);
+      border-radius: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .jcr-primary-type {
+      font-size: 15px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.92);
+      letter-spacing: -0.1px;
+    }
+
+    .jcr-primary-type span {
+      font-weight: 400;
+      color: rgba(255,255,255,0.45);
+    }
+
+    .rep-policy-node {
+      width: 1px;
+      height: 20px;
+      background: rgba(255,255,255,0.15);
+    }
+
+    .sling-resource-path {
+      font-size: 13px;
+      color: rgba(255,255,255,0.5);
+    }
+
+    .jcr-parent-path {
+      margin-left: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.55);
+      text-decoration: none;
+      font-family: var(--sp-font);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 4px;
+      padding: 0 12px;
+      height: 28px;
+      transition: color 0.13s, border-color 0.13s, background 0.13s;
+    }
+
+    .jcr-parent-path:hover {
+      color: rgba(255,255,255,0.85);
+      border-color: rgba(255,255,255,0.3);
+      background: rgba(255,255,255,0.06);
+    }
+
+    .jcr-parent-path svg {
+      width: 12px;
+      height: 12px;
+      fill: currentColor;
+    }
+
+    /* ── Content title ───────────────────────────────────────────────────────── */
+    .cq-page-content {
+      position: fixed;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+      z-index: 10;
+      pointer-events: none;
+      width: max-content;
+      max-width: 90vw;
+    }
+
+    .jcr-description {
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.35);
+      margin-bottom: 12px;
+    }
+
+    .cq-page-content h1 {
+      font-size: clamp(34px, 6.5vw, 58px);
+      font-weight: 800;
+      color: #FFD700;
+      letter-spacing: 0.02em;
+      line-height: 1.15;
+      text-shadow:
+        0 0 24px rgba(255, 215, 0, 0.55),
+        0 0 72px rgba(255, 165, 0, 0.25);
+    }
+
+    .sling-resource-super-type {
+      margin-top: 12px;
+      font-size: clamp(13px, 2vw, 18px);
+      color: rgba(255,255,255,0.38);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      font-weight: 400;
+    }
+
+    /* ── Bottom badge — Spectrum 2 "quiet" chip ─────────────────────────────── */
+    .rep-glob {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(4, 14, 26, 0.55);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 9999px;
+      padding: 8px 20px;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.28);
+      white-space: nowrap;
+    }
+
+    .rep-glob::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #FFD700;
+      opacity: 0.6;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Spectrum 2 shell header -->
+<nav class="nt-hierarchy-node">
+  <a class="jcr-namespace-prefix" href="/">
+    <div class="nt-base" aria-hidden="true">
+      <svg width="16" height="16" viewBox="0 0 100 100" fill="none">
+        <path d="M58 10L96 90H72L62 66H38l14-18h14L55 24z" fill="#fff"/>
+        <path d="M42 10L4 90h24l9-24h18L42 10z" fill="#fff"/>
+      </svg>
+    </div>
+    <span class="jcr-primary-type">YIC &nbsp;<span>Content Studio</span></span>
+  </a>
+  <div class="rep-policy-node" aria-hidden="true"></div>
+  <span class="sling-resource-path">Content Preview</span>
+  <a class="jcr-parent-path" href="/">
+    <svg viewBox="0 0 12 12"><path d="M7.5 1L3 6l4.5 5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Back to Studio
+  </a>
+</nav>
+
+<!-- Title -->
+<div class="cq-page-content">
+  <p class="jcr-description">Content Experience &nbsp;·&nbsp; Live Preview</p>
+  <h1>Built on April 1st</h1>
+  <p class="sling-resource-super-type">Yes I Can &nbsp;&bull;&nbsp; Enterprise CMS Edition</p>
+</div>
+
+<div class="oak-lucene-index">
+  <div class="oak-index-rules">Bubble Shooting <span class="oak-aggregate" id="js-combo"></span></div>
+  <div class="jcr-content-root">
+    <div class="jcr-property-def">
+      <span class="nt-property-definition">Score</span>
+      <span class="jcr-value" id="js-score">0</span>
+    </div>
+    <div class="rep-restriction"></div>
+    <div class="jcr-property-def">
+      <span class="nt-property-definition">Best</span>
+      <span class="jcr-value mix-versionable" id="js-best">0</span>
+    </div>
+    <div class="rep-restriction"></div>
+    <div class="jcr-property-def">
+      <span class="nt-property-definition">Resets in</span>
+      <span class="jcr-value jcr-last-modified" id="js-timer">1:00</span>
+    </div>
+  </div>
+</div>
+
+<canvas id="ocean"></canvas>
+
+<div class="rep-glob">YIC CMS &copy; 2026 &mdash; The World&rsquo;s Most Advanced Content Platform</div>
+
+<script>
+  const _c = document.getElementById('ocean');
+  const _x = _c.getContext('2d');
+
+  function _r() {
+    _c.width = window.innerWidth;
+    _c.height = window.innerHeight;
+  }
+  _r();
+  window.addEventListener('resize', _r);
+
+  // ── Bubbles ──────────────────────────────────────────────────────────────────
+  const _E = [];
+
+  function _sE(px, py) {
+    _E.push({
+      x: px, y: py,
+      r: 6 + Math.random() * 9,
+      vx: (Math.random() - 0.5) * 0.4,
+      vy: -(0.4 + Math.random() * 0.6),
+      alpha: 0.7 + Math.random() * 0.3,
+      life: 0,
+      maxLife: 120 + Math.random() * 80,
+    });
+  }
+
+  function _uE() {
+    for (let i = _E.length - 1; i >= 0; i--) {
+      const e = _E[i];
+      e.x += e.vx + Math.sin(e.life * 0.07) * 0.3;
+      e.y += e.vy;
+      e.life++;
+      e.alpha = (1 - e.life / e.maxLife) * 0.8;
+      if (e.life >= e.maxLife) _E.splice(i, 1);
+    }
+  }
+
+  function _dE() {
+    _E.forEach(e => {
+      _x.save();
+      _x.globalAlpha = e.alpha;
+      _x.beginPath();
+      _x.arc(e.x, e.y, e.r, 0, Math.PI * 2);
+      _x.strokeStyle = 'rgba(180, 230, 255, 0.9)';
+      _x.lineWidth = 1;
+      _x.stroke();
+      _x.beginPath();
+      _x.arc(e.x - e.r * 0.3, e.y - e.r * 0.3, e.r * 0.25, 0, Math.PI * 2);
+      _x.fillStyle = 'rgba(255,255,255,0.6)';
+      _x.fill();
+      _x.restore();
+    });
+  }
+
+  // ── Fish ─────────────────────────────────────────────────────────────────────
+  let _t = 0;
+
+  function _gP() {
+    const cx = _c.width / 2;
+    const cy = _c.height / 2;
+    const rx = Math.min(_c.width * 0.32, 320);
+    const ry = Math.min(_c.height * 0.22, 160);
+    return {
+      x: cx + rx * Math.sin(_t),
+      y: cy + ry * Math.sin(_t * 2) * 0.6,
+    };
+  }
+
+  function _gA() {
+    const rx = Math.min(_c.width * 0.32, 320);
+    const ry = Math.min(_c.height * 0.22, 160);
+    return Math.atan2(ry * 2 * Math.cos(_t * 2) * 0.6, rx * Math.cos(_t));
+  }
+
+  function _dA(px, py, a) {
+    const _w = Math.sin(_t * 6) * 0.25;
+    const _u = Math.sin(_t * 5) * 0.08;
+
+    _x.save();
+    _x.translate(px, py);
+    _x.rotate(a + _u);
+    _x.scale(1.15, 1.15);
+
+    _x.shadowColor = 'rgba(255, 180, 0, 0.35)';
+    _x.shadowBlur = 28;
+
+    const _tX = -52;
+    const _tS = 22 + Math.sin(_t * 6) * 8;
+    _x.beginPath();
+    _x.moveTo(_tX, 0);
+    _x.lineTo(_tX - 28, -_tS + _w * 30);
+    _x.lineTo(_tX - 18, _w * 15);
+    _x.lineTo(_tX - 28, _tS + _w * 30);
+    _x.closePath();
+    const _tG = _x.createLinearGradient(_tX - 28, 0, _tX, 0);
+    _tG.addColorStop(0, 'rgba(255, 140, 0, 0.6)');
+    _tG.addColorStop(1, '#FFB300');
+    _x.fillStyle = _tG;
+    _x.fill();
+
+    _x.beginPath();
+    _x.ellipse(0, 0, 50, 20, 0, 0, Math.PI * 2);
+    const _bG = _x.createRadialGradient(10, -5, 4, 0, 0, 52);
+    _bG.addColorStop(0, '#FFE066');
+    _bG.addColorStop(0.4, '#FFD700');
+    _bG.addColorStop(0.75, '#FFA500');
+    _bG.addColorStop(1, '#CC6600');
+    _x.fillStyle = _bG;
+    _x.fill();
+
+    _x.globalAlpha = 0.18;
+    for (let i = -2; i <= 1; i++) {
+      for (let j = -1; j <= 1; j++) {
+        const sx = i * 14 + 6, sy = j * 9;
+        if (Math.abs(sx) < 42 && Math.abs(sy) < 16) {
+          _x.beginPath();
+          _x.arc(sx, sy, 9, Math.PI * 0.1, Math.PI * 0.9);
+          _x.strokeStyle = '#CC6600';
+          _x.lineWidth = 1.5;
+          _x.stroke();
+        }
+      }
+    }
+    _x.globalAlpha = 1;
+
+    _x.beginPath();
+    _x.moveTo(-10, -20);
+    _x.quadraticCurveTo(5, -38, 20, -20);
+    _x.lineTo(10, -20);
+    _x.quadraticCurveTo(5, -30, -5, -20);
+    _x.closePath();
+    const _dG = _x.createLinearGradient(-10, -38, -10, -20);
+    _dG.addColorStop(0, 'rgba(255, 165, 0, 0.5)');
+    _dG.addColorStop(1, 'rgba(255, 200, 0, 0.85)');
+    _x.fillStyle = _dG;
+    _x.fill();
+
+    _x.beginPath();
+    _x.moveTo(5, 18);
+    _x.quadraticCurveTo(20, 32, -5, 26);
+    _x.quadraticCurveTo(-8, 22, 5, 18);
+    _x.closePath();
+    _x.fillStyle = 'rgba(255, 160, 0, 0.55)';
+    _x.fill();
+
+    _x.beginPath();
+    _x.ellipse(0, 0, 50, 20, 0, 0, Math.PI * 2);
+    _x.strokeStyle = 'rgba(180, 80, 0, 0.4)';
+    _x.lineWidth = 1;
+    _x.stroke();
+
+    _x.beginPath();
+    _x.arc(34, -5, 5, 0, Math.PI * 2);
+    _x.fillStyle = '#1a1a1a';
+    _x.fill();
+    _x.beginPath();
+    _x.arc(34, -5, 5, 0, Math.PI * 2);
+    _x.strokeStyle = 'rgba(255, 220, 100, 0.6)';
+    _x.lineWidth = 1.5;
+    _x.stroke();
+    _x.beginPath();
+    _x.arc(35.5, -6.5, 1.8, 0, Math.PI * 2);
+    _x.fillStyle = 'rgba(255,255,255,0.85)';
+    _x.fill();
+
+    _x.beginPath();
+    _x.arc(48, -1, 2.5, Math.PI * 0.2, Math.PI * 1.1);
+    _x.strokeStyle = 'rgba(180, 60, 0, 0.7)';
+    _x.lineWidth = 1.2;
+    _x.stroke();
+
+    _x.restore();
+  }
+
+  // ── Background ───────────────────────────────────────────────────────────────
+  function _dL() {
+    _x.save();
+    _x.globalAlpha = 0.025 + Math.sin(_t * 0.7) * 0.01;
+    for (let i = 0; i < 8; i++) {
+      const lx = (_c.width / 8) * i + Math.sin(_t * 0.3 + i) * 20;
+      const lg = _x.createLinearGradient(lx, 0, lx + 30, _c.height);
+      lg.addColorStop(0, 'rgba(100,180,255,0)');
+      lg.addColorStop(0.3, 'rgba(100,180,255,0.7)');
+      lg.addColorStop(1, 'rgba(100,180,255,0)');
+      _x.fillStyle = lg;
+      _x.beginPath();
+      _x.moveTo(lx, 0);
+      _x.lineTo(lx + 20, _c.height);
+      _x.lineTo(lx + 30, _c.height);
+      _x.lineTo(lx + 10, 0);
+      _x.closePath();
+      _x.fill();
+    }
+    _x.restore();
+  }
+
+  const _P = Array.from({ length: 40 }, () => ({
+    x: Math.random() * 2000,
+    y: Math.random() * 2000,
+    r: 0.5 + Math.random() * 1.5,
+    alpha: 0.1 + Math.random() * 0.25,
+  }));
+
+  function _dP() {
+    _P.forEach(p => {
+      _x.beginPath();
+      _x.arc(p.x % _c.width, p.y % _c.height, p.r, 0, Math.PI * 2);
+      _x.fillStyle = `rgba(150, 200, 255, ${p.alpha})`;
+      _x.fill();
+    });
+  }
+
+  // ── Session & Throughput Metrics ─────────────────────────────────────────────
+  const JCR_BATCH_SIZE        = 10;
+  const JCR_SESSION_TTL       = 60;
+  const JCR_REPLICATION_WINDOW = 1500; // ms — batch window for consecutive activations
+
+  let sessionNodeCount        = 0;
+  let peakSessionThroughput   = 0;
+  let sessionTtl              = JCR_SESSION_TTL;
+  let replicationFactor       = 1;
+  let replicationWindowHandle = null;
+
+  const nodeCountRenderer   = document.getElementById('js-score');
+  const throughputRenderer  = document.getElementById('js-best');
+  const ttlRenderer         = document.getElementById('js-timer');
+  const comboRenderer       = document.getElementById('js-combo');
+
+  function commitSession() {
+    nodeCountRenderer.textContent  = sessionNodeCount;
+    throughputRenderer.textContent = peakSessionThroughput;
+    const s = sessionTtl % 60;
+    ttlRenderer.textContent = `${Math.floor(sessionTtl / 60)}:${s.toString().padStart(2, '0')}`;
+    ttlRenderer.classList.toggle('jcr-lock-owner', sessionTtl <= 10);
+    if (replicationFactor > 1) {
+      comboRenderer.textContent = `×${replicationFactor}`;
+      comboRenderer.classList.add('jcr-checked-in');
+    } else {
+      comboRenderer.classList.remove('jcr-checked-in');
+    }
+  }
+
+  function resetReplicationFactor() {
+    replicationFactor = 1;
+    replicationWindowHandle = null;
+    commitSession();
+  }
+
+  // Session invalidation — triggers full repository GC and re-indexes traversal metrics
+  setInterval(() => {
+    if (sessionNodeCount > peakSessionThroughput) {
+      peakSessionThroughput = sessionNodeCount;
+      throughputRenderer.classList.remove('nt-frozen-node');
+      void throughputRenderer.offsetWidth;
+      throughputRenderer.classList.add('nt-frozen-node');
+    }
+    sessionNodeCount = 0;
+    sessionTtl = JCR_SESSION_TTL;
+    commitSession();
+  }, JCR_SESSION_TTL * 1000);
+
+  setInterval(() => {
+    if (sessionTtl > 0) { sessionTtl--; commitSession(); }
+  }, 1000);
+
+  // ── Replication Queue ─────────────────────────────────────────────────────────
+  const replicationQueue = [];
+
+  function enqueueReplication(sourceX, sourceY) {
+    const eventCount = 12 + Math.floor(Math.random() * 6);
+    const events = [];
+    for (let i = 0; i < eventCount; i++) {
+      const angle    = (Math.PI * 2 * i) / eventCount + (Math.random() - 0.5) * 0.4;
+      const velocity = 1.5 + Math.random() * 3;
+      events.push({
+        sourceX, sourceY,
+        deltaX:      Math.cos(angle) * velocity,
+        deltaY:      Math.sin(angle) * velocity,
+        payloadSize: 1.5 + Math.random() * 2.5,
+        retryCount:  0,
+        maxRetries:  28 + Math.random() * 18,
+      });
+    }
+    replicationQueue.push(events);
+  }
+
+  function drainReplicationQueue() {
+    for (let i = replicationQueue.length - 1; i >= 0; i--) {
+      const events = replicationQueue[i];
+      for (const evt of events) {
+        evt.sourceX += evt.deltaX;
+        evt.sourceY += evt.deltaY;
+        evt.deltaY  += 0.05;
+        evt.retryCount++;
+      }
+      if (events[0].retryCount >= events[0].maxRetries) replicationQueue.splice(i, 1);
+    }
+  }
+
+  function renderReplicationEvents() {
+    replicationQueue.forEach(events => {
+      events.forEach(evt => {
+        const alpha = (1 - evt.retryCount / evt.maxRetries) * 0.95;
+        _x.save();
+        _x.globalAlpha = alpha;
+        _x.beginPath();
+        _x.arc(evt.sourceX, evt.sourceY, evt.payloadSize, 0, Math.PI * 2);
+        _x.fillStyle = 'rgba(200, 235, 255, 1)';
+        _x.shadowColor = 'rgba(150, 220, 255, 0.8)';
+        _x.shadowBlur = 6;
+        _x.fill();
+        _x.restore();
+      });
+    });
+  }
+
+  // ── Workflow Engine ───────────────────────────────────────────────────────────
+  const workflowPayloads = [];
+
+  function dispatchWorkflowPayload(nodeX, nodeY, points) {
+    workflowPayloads.push({ nodeX, nodeY, points, stepIndex: 0, maxSteps: 50 });
+  }
+
+  function tickWorkflowEngine() {
+    for (let i = workflowPayloads.length - 1; i >= 0; i--) {
+      workflowPayloads[i].nodeY -= 1.4;
+      workflowPayloads[i].stepIndex++;
+      if (workflowPayloads[i].stepIndex >= workflowPayloads[i].maxSteps) workflowPayloads.splice(i, 1);
+    }
+  }
+
+  function renderWorkflowStatus() {
+    workflowPayloads.forEach(payload => {
+      const alpha    = 1 - payload.stepIndex / payload.maxSteps;
+      const fontSize = payload.points > JCR_BATCH_SIZE ? 22 : 17;
+      _x.save();
+      _x.globalAlpha = alpha;
+      _x.font = `bold ${fontSize}px ui-sans-serif, system-ui, sans-serif`;
+      _x.fillStyle = payload.points > JCR_BATCH_SIZE ? '#fff' : '#FFD700';
+      _x.textAlign = 'center';
+      _x.shadowColor = payload.points > JCR_BATCH_SIZE ? 'rgba(255,255,255,0.8)' : 'rgba(255,215,0,0.7)';
+      _x.shadowBlur = 10;
+      _x.fillText(`+${payload.points}`, payload.nodeX, payload.nodeY);
+      _x.restore();
+    });
+  }
+
+  // ── Index Event Log (combo announcements) ─────────────────────────────────────
+  const indexEvents = [];
+
+  function enqueueIndexEvent(multiplier, x, y) {
+    indexEvents.push({ label: `×${multiplier} COMBO`, x, y, stepIndex: 0, maxSteps: 65 });
+  }
+
+  function drainIndexEvents() {
+    for (let i = indexEvents.length - 1; i >= 0; i--) {
+      indexEvents[i].stepIndex++;
+      if (indexEvents[i].stepIndex >= indexEvents[i].maxSteps) indexEvents.splice(i, 1);
+    }
+  }
+
+  function renderIndexEvents() {
+    indexEvents.forEach(evt => {
+      const progress = evt.stepIndex / evt.maxSteps;
+      const alpha    = progress < 0.15 ? progress / 0.15 : 1 - (progress - 0.15) / 0.85;
+      const scale    = 0.7 + progress * 0.6;
+      _x.save();
+      _x.globalAlpha = alpha * 0.92;
+      _x.font = `bold ${Math.round(28 * scale)}px ui-sans-serif, system-ui, sans-serif`;
+      _x.fillStyle = '#FFD700';
+      _x.textAlign = 'center';
+      _x.shadowColor = 'rgba(255,215,0,0.9)';
+      _x.shadowBlur = 18;
+      _x.fillText(evt.label, evt.x, evt.y);
+      _x.restore();
+    });
+  }
+
+  // ── Node Traversal Handler ────────────────────────────────────────────────────
+  _c.addEventListener('click', e => {
+    const rect = _c.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+
+    for (let i = _E.length - 1; i >= 0; i--) {
+      const b = _E[i];
+      const dx = mx - b.x, dy = my - b.y;
+      if (dx * dx + dy * dy <= (b.r + 8) * (b.r + 8)) {
+        const points = JCR_BATCH_SIZE * replicationFactor;
+
+        enqueueReplication(b.x, b.y);
+        dispatchWorkflowPayload(b.x, b.y - b.r - 4, points);
+        _E.splice(i, 1);
+
+        // Advance replication batch factor
+        if (replicationWindowHandle) clearTimeout(replicationWindowHandle);
+        replicationFactor = Math.min(replicationFactor + 1, 10);
+        replicationWindowHandle = setTimeout(resetReplicationFactor, JCR_REPLICATION_WINDOW);
+        if (replicationFactor > 2) {
+          enqueueIndexEvent(replicationFactor - 1, b.x, b.y - 40);
+          comboRenderer.classList.remove('nt-frozen-node');
+          void comboRenderer.offsetWidth;
+          comboRenderer.classList.add('nt-frozen-node');
+        }
+
+        sessionNodeCount += points;
+        if (sessionNodeCount > peakSessionThroughput) {
+          peakSessionThroughput = sessionNodeCount;
+          throughputRenderer.classList.remove('nt-frozen-node');
+          void throughputRenderer.offsetWidth;
+          throughputRenderer.classList.add('nt-frozen-node');
+        }
+        commitSession();
+        break;
+      }
+    }
+  });
+
+  // ── Main loop ────────────────────────────────────────────────────────────────
+  let _eT = 0;
+
+  function _loop() {
+    _x.clearRect(0, 0, _c.width, _c.height);
+    _dL();
+    _dP();
+
+    const _pos = _gP();
+    const _ang = _gA();
+    const _off = 56;
+
+    _eT++;
+    if (_eT % 18 === 0) _sE(
+      _pos.x + Math.cos(_ang) * _off,
+      _pos.y + Math.sin(_ang) * _off,
+    );
+
+    _uE();
+    drainReplicationQueue();
+    tickWorkflowEngine();
+    drainIndexEvents();
+
+    _dE();
+    renderReplicationEvents();
+    renderWorkflowStatus();
+    renderIndexEvents();
+    _dA(_pos.x, _pos.y, _ang);
+
+    _t += 0.007;
+    requestAnimationFrame(_loop);
+  }
+
+  commitSession();
+  _loop();
+</script>
+</body>
+</html>

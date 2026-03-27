@@ -1,0 +1,12 @@
+{
+  "name": "yic",
+  "version": "1.0.0",
+  "description": "YIC — Yes I Can CMS: The world's most intelligent headless content platform",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
